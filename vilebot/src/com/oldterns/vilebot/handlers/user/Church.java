@@ -23,7 +23,7 @@ public class Church
     private static final Pattern churchTotalPattern = Pattern.compile( "^!churchtotal" );
     private static final Pattern topDonorsPattern = Pattern.compile( "^!topdonors" );
     private static final Pattern setTitlesPattern = Pattern.compile( "^!settitle (.+)$" );
-    private static final Pattern inquisitPattern = Pattern.compile( "^!inquisit (" + nounPattern + ") (.+)$" );
+    private static final Pattern inquisitPattern = Pattern.compile( "^!inquisit (" + nounPattern + ")\\s*$" );
     private static final Pattern topDonorsAyePattern = Pattern.compile( "^!aye" );
     private static final Pattern topDonorsNayPattern = Pattern.compile( "^!nay" );
 
@@ -134,13 +134,14 @@ public class Church
         }
     }
 
-    private synchronized void startInquisitionVote(ReceivePrivmsg event, String inquisitedNick, int donorRank) throws Exception {
+    private synchronized void startInquisitionVote(ReceivePrivmsg event, String inquisitedNick, int donorRank) {
         currentVote = new VoteEvent();
         currentVote.setDecisionTarget(inquisitedNick);
         currentVote.updateVoteAye(donorRank);
         startTimer(event);
     }
 
+    @Handler
     public void inquisitDecision(ReceivePrivmsg event) {
         Matcher matcherAye = topDonorsAyePattern.matcher(event.getText());
         Matcher matcherNay = topDonorsNayPattern.matcher(event.getText());
@@ -168,8 +169,8 @@ public class Church
         timer.submit(new Runnable() {
             @Override
             public void run() {
-                Thread.sleep(TIMEOUT);
                 try {
+		    Thread.sleep(TIMEOUT);
                     timeoutTimer(event);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
@@ -190,11 +191,6 @@ public class Church
         event.reply(message);
         currentVote = null;
     }
-
-    //private void stopTimer() {
-      //  timer.shutdownNow();
-        //timer = Executors.newFixedThreadPool(1);
-    //}
 
     private static boolean replyWithRankAndDonationAmount(String noun, Replyable event) {
         Integer nounKarma = ChurchDB.getDonorKarma(noun);
@@ -230,7 +226,7 @@ public class Church
         private boolean[] topDonorDecisions;
         private String decisionTarget;
 
-        public VoteEvent() throws Exception {
+        public VoteEvent() {
             topDonorDecisions = new boolean[4];
             for (int i = 0; i < 4; i++) {
                 topDonorDecisions[i] = false;
